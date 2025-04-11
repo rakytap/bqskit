@@ -301,6 +301,7 @@ from bqskit.passes.synthesis.qpredict import QPredictDecompositionPass
 from bqskit.passes.synthesis.qsd import FullQSDPass
 from bqskit.passes.synthesis.qsd import MGDPass
 from bqskit.passes.synthesis.qsd import QSDPass
+from bqskit.passes.synthesis.squander import SquanderSynthesisPass
 from bqskit.passes.synthesis.qsearch import QSearchSynthesisPass
 from bqskit.passes.synthesis.synthesis import SynthesisPass
 from bqskit.passes.synthesis.target import SetTargetPass
