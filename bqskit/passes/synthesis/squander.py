@@ -163,11 +163,11 @@ class SquanderSynthesisPass(SynthesisPass):
 
 
      
-    def transform_circuit_from_squander_to_qsearch(self,
+    def transform_circuit_from_squander_to_bqskit(self,
         Squander_circuit,
         parameters,
         qubitnum)-> Circuit:
-        "a function to change the circuit from bqskit to squander"
+        "a function to translate the circuit from squander to bqskit"
     #import all the gates
         from bqskit.ir.gates.constant.cx import CNOTGate
         from bqskit.ir.gates.parameterized.cry import CRYGate
@@ -343,7 +343,7 @@ class SquanderSynthesisPass(SynthesisPass):
             squander_circuit = cDecompose.get_Circuit()
             parameters       = cDecompose.get_Optimized_Parameters()
    
-            Circuit_squander = self.transform_circuit_from_squander_to_qsearch( squander_circuit, parameters, qubitnum)          
+            Circuit_squander = self.transform_circuit_from_squander_to_bqskit( squander_circuit, parameters, qubitnum)          
             dist             = self.cost.calc_cost(Circuit_squander, utry)  
         
             #print( 'Squander dist: ', str(dist) )
