@@ -38,23 +38,12 @@ start_squander = time.time()
 # SQUANDER synthesis
  
  
-config = { 'max_outer_iterations': 1, 
-                'agent_lifetime':1000,
-                'max_inner_iterations_agent': 100000,
-                'convergence_length': 10,
-                'max_inner_iterations_compression': 100000,
-                'max_inner_iterations' : 10000,
-                'max_inner_iterations_final': 10000, 		
-                'Randomized_Radius': 0.3, 
-                'randomized_adaptive_layers': 1,
-                'agent_num': 256,
-                'parallel': 0,
-                'batch_size': 4,
-                'optimization_tolerance_agent': 1e-8} #1e-2
+config = {      'convergence_length': 10,
+                'parallel': 0,}
                 
 
 workflow = [
-    ScanPartitioner( largest_partition ), 
+    QuickPartitioner( largest_partition ), 
     ForEachBlockPass([SquanderSynthesisPass(squander_config=config, optimizer_engine="BFGS" ), ScanningGateRemovalPass()]), 
     UnfoldPass(),
 ]
@@ -84,7 +73,7 @@ Circuit.save(synthesized_circuit_squander, circuit_name + '_squander.qasm')
 
 
 
-print("\n the gates with squander :")
+print("\n Circuit optimized with squander:")
 
 
 squander_gates = []
@@ -94,12 +83,15 @@ for gate in synthesized_circuit_squander.gate_set:
     squander_gates.append(case_squander)
  
 end_squander = time.time()
-time_squander = {"the execution time with squander:": end_squander-start_squander}
-squander_gates.append(time_squander)
+time_squander = "the execution time with squander:" + str(end_squander-start_squander)
+
 print(squander_gates, "\n")
+print( time_squander )
 
 with open("squander_gates.pickle", "wb") as file:
     pickle.dump(squander_gates, file, pickle.HIGHEST_PROTOCOL)
+    
+
     
     
 
@@ -128,7 +120,7 @@ Circuit.save(synthesized_circuit_qsearch, circuit_name + '_qsearch.qasm')
 
 
 
-print("\n the gates with qsearch :")
+print("\n Circuit optimized with qsearch:")
 
 qsearch_gates = []
 
@@ -137,10 +129,10 @@ for gate in synthesized_circuit_qsearch.gate_set:
     qsearch_gates.append(case_qsearch)
  
 end_qsearch = time.time()
-time_qsearch = {"the execution time with qsearch:": end_qsearch-start_qsearch}
-qsearch_gates.append(time_qsearch)
-print(qsearch_gates, "\n")
+time_qsearch = "the execution time with qsearch:" + str(end_qsearch-start_qsearch)
 
+print(qsearch_gates, "\n")
+print( time_qsearch )
 
 with open("qsearch_gates.pickle", "wb") as file:
     pickle.dump(qsearch_gates, file, pickle.HIGHEST_PROTOCOL)
