@@ -293,7 +293,7 @@ class SquanderSynthesisPass(SynthesisPass):
         """Synthesize `utry`, see :class:`SynthesisPass` for more."""
         # Initialize run-dependent options
         
-        from squander import N_Qubit_Decomposition_non_unitary_adaptive
+        from squander import N_Qubit_Decomposition_Tree_Search
         from squander import Circuit as qgd_Circuit
         import numpy as np
         import numpy.linalg as LA
@@ -310,7 +310,7 @@ class SquanderSynthesisPass(SynthesisPass):
         if qubitnum > 2 :
 
             #print("qubitnum is bigger then 2")
-            cDecompose = N_Qubit_Decomposition_non_unitary_adaptive( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
+            cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
             #cDecompose.set_Project_Name( project_name )
         #    cDecompose.tree_comb(qubitnum,3)
         #    cDecompose.add_2qubitgate(gate.get("control_qbit"),gate.get("target_qbit"))
