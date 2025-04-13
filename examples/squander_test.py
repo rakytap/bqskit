@@ -29,24 +29,7 @@ import pickle
 # define the largest partition in circuit
 largest_partition = 3
 
-print("this partition is with ",largest_partition,"qubits on ",circuit_name,"circuit",)
 
-start_squander = time.time()
-
-
-###########################################################################
-# SQUANDER synthesis
- 
- 
-config = {      'convergence_length': 10,
-                'parallel': 0,}
-                
-
-workflow = [
-    QuickPartitioner( largest_partition ), 
-    ForEachBlockPass([SquanderSynthesisPass(squander_config=config, optimizer_engine="BFGS" ), ScanningGateRemovalPass()]), 
-    UnfoldPass(),
-]
 print("\n the original gates are: \n")
 
     
@@ -58,42 +41,102 @@ for gate in bqskit_circuit_original.gate_set:
     
 print(original_gates, "\n")
 
-with open("original_gates.pickle", "wb") as file:
-    pickle.dump(original_gates, file, pickle.HIGHEST_PROTOCOL)
+
+###########################################################################
+# SQUANDER Tree seach synthesis 
+ 
+start_squander = time.time()
+ 
+config = {  'strategy': "Tree_search", 
+            'parallel': 0,
+         }
+                
+
+workflow = [
+    QuickPartitioner( largest_partition ), 
+    ForEachBlockPass([SquanderSynthesisPass(squander_config=config, optimizer_engine="BFGS" ), ScanningGateRemovalPass()]), 
+    UnfoldPass(),
+]
+
 
 
 # Finally, we construct a compiler and submit the task
 #with Compiler(num_workers=1) as compiler:
 with Compiler() as compiler:
-    synthesized_circuit_squander = compiler.compile(bqskit_circuit_original, workflow)
+    circuit_squander_tree = compiler.compile(bqskit_circuit_original, workflow)
 
 
-Circuit.save(synthesized_circuit_squander, circuit_name + '_squander.qasm')
+Circuit.save(circuit_squander_tree, circuit_name + '_squander_tree_search.qasm')
 
 
 
 
-print("\n Circuit optimized with squander:")
+print("\n Circuit optimized with squander tree search:")
 
 
 squander_gates = []
 
-for gate in synthesized_circuit_squander.gate_set:
-    case_squander = {f"{gate}count:":  synthesized_circuit_squander.count(gate)}
+for gate in circuit_squander_tree.gate_set:
+    case_squander = {f"{gate}count:":  circuit_squander_tree.count(gate)}
     squander_gates.append(case_squander)
  
 end_squander = time.time()
-time_squander = "the execution time with squander:" + str(end_squander-start_squander)
+time_squander = "the execution time with squander tree search:" + str(end_squander-start_squander)
 
 print(squander_gates, "\n")
 print( time_squander )
+print(' ')
+print(' ')
+ 
 
-with open("squander_gates.pickle", "wb") as file:
-    pickle.dump(squander_gates, file, pickle.HIGHEST_PROTOCOL)
+    
     
 
-    
-    
+###########################################################################
+# SQUANDER Tabu seach synthesis 
+ 
+start_squander = time.time()
+
+config = {  'strategy': "Tabu_search", 
+            'parallel': 0,
+         }
+
+workflow = [
+    QuickPartitioner( largest_partition ), 
+    ForEachBlockPass([SquanderSynthesisPass(squander_config=config, optimizer_engine="BFGS" ), ScanningGateRemovalPass()]), 
+    UnfoldPass(),
+]
+
+
+# Finally, we construct a compiler and submit the task
+#with Compiler(num_workers=1) as compiler:
+with Compiler() as compiler:
+    circuit_squander_tabu = compiler.compile(bqskit_circuit_original, workflow)
+
+
+Circuit.save(circuit_squander_tabu, circuit_name + '_squander_tabu_search.qasm')
+
+
+
+
+print("\n Circuit optimized with squander tabu search:")
+
+
+squander_gates = []
+
+for gate in circuit_squander_tabu.gate_set:
+    case_squander = {f"{gate}count:":  circuit_squander_tabu.count(gate)}
+    squander_gates.append(case_squander)
+ 
+end_squander = time.time()
+time_squander = "the execution time with squander with tabu search:" + str(end_squander-start_squander)
+
+print(squander_gates, "\n")
+print( time_squander )
+print(' ')
+print(' ')
+  
+
 
 
 
@@ -133,11 +176,8 @@ time_qsearch = "the execution time with qsearch:" + str(end_qsearch-start_qsearc
 
 print(qsearch_gates, "\n")
 print( time_qsearch )
-
-with open("qsearch_gates.pickle", "wb") as file:
-    pickle.dump(qsearch_gates, file, pickle.HIGHEST_PROTOCOL)
-
-
+print(' ')
+print(' ')
 
 
 
@@ -150,19 +190,20 @@ qiskit_version = qiskit.version.get_version_info()
 
 from qiskit import QuantumCircuit
 import qiskit_aer as Aer    
-    
-if qiskit_version[0] == '1':
-    from qiskit import transpile
-else :
-    from qiskit import execute
+   
 
+if qiskit_version[0] == '0':
+    from qiskit import execute
+else:
+    from qiskit import transpile
 
 
 
 # load the circuit from QASM format
-qc_original = QuantumCircuit.from_qasm_file( circuit_name +  '.qasm' )
-qc_squander = QuantumCircuit.from_qasm_file( circuit_name +  '_squander.qasm' )
-qc_qsearch  = QuantumCircuit.from_qasm_file( circuit_name +  '_qsearch.qasm' )
+qc_original      = QuantumCircuit.from_qasm_file( circuit_name +  '.qasm' )
+qc_squander_tabu = QuantumCircuit.from_qasm_file( circuit_name +  '_squander_tabu_search.qasm' )
+qc_squander_tree = QuantumCircuit.from_qasm_file( circuit_name +  '_squander_tree_search.qasm' )
+qc_qsearch       = QuantumCircuit.from_qasm_file( circuit_name +  '_qsearch.qasm' )
 
 
 # generate random initial state on which we test the circuits
@@ -177,35 +218,18 @@ state_to_transform = initial_state.copy()
 qc_original.initialize( state_to_transform )
 
 state_to_transform = initial_state.copy()
-qc_squander.initialize( state_to_transform )
+qc_squander_tabu.initialize( state_to_transform )
+
+state_to_transform = initial_state.copy()
+qc_squander_tree.initialize( state_to_transform )
 
 state_to_transform = initial_state.copy()
 qc_qsearch.initialize( state_to_transform )
 
 
-# Execute and get the state vector
-if qiskit_version[0] == '1':
-	
-	qc_original.save_statevector()
-	qc_squander.save_statevector()
-	qc_qsearch.save_statevector()
 
-	backend = Aer.AerSimulator(method='statevector')
-
-	# Execute and get the state vector
-	result                     = backend.run(qc_original).result()
-	transformed_state_original = np.array( result.get_statevector(qc_original) )
-
-	result                     = backend.run(qc_squander).result()
-	transformed_state_squander = np.array( result.get_statevector(qc_squander) )
-	
-	result                     = backend.run(qc_qsearch).result()
-	transformed_state_qsearch  = np.array( result.get_statevector(qc_qsearch) )
-
-	
-       
         
-elif qiskit_version[0] == '0':
+if qiskit_version[0] == '0':
 	
 	# Select the StatevectorSimulator from the Aer provider
 	simulator = Aer.get_backend('statevector_simulator')	
@@ -213,27 +237,57 @@ elif qiskit_version[0] == '0':
 	backend = Aer.get_backend('aer_simulator')
 
 	# Execute and get the state vector
-	result                     = execute(qc_original, simulator).result()
-	transformed_state_original = np.array( result.get_statevector(qc_original) )
+	result                          = execute(qc_original, simulator).result()
+	transformed_state_original      = np.array( result.get_statevector(qc_original) )
 
-	result                     = execute(qc_squander, simulator).result()
-	transformed_state_squander = np.array( result.get_statevector(qc_squander) )
+	result                          = execute(qc_squander_tabu, simulator).result()
+	transformed_state_squander_tabu = np.array( result.get_statevector(qc_squander_tabu) )
+
+	result                          = execute(qc_squander_tree, simulator).result()
+	transformed_state_squander_tree = np.array( result.get_statevector(qc_squander_tree) )
 	
-	result                     = execute(qc_qsearch, simulator).result()
-	transformed_state_qsearch  = np.array( result.get_statevector(qc_qsearch) )
+	result                          = execute(qc_qsearch, simulator).result()
+	transformed_state_qsearch       = np.array( result.get_statevector(qc_qsearch) )
 
 
+# Execute and get the state vector
+else :
+	
+	qc_original.save_statevector()
+	qc_squander_tabu.save_statevector()
+	qc_squander_tree.save_statevector()
+	qc_qsearch.save_statevector()
+
+	backend = Aer.AerSimulator(method='statevector')
+
+	# Execute and get the state vector
+	result                          = backend.run(qc_original).result()
+	transformed_state_original      = np.array( result.get_statevector(qc_original) )
+
+	result                          = backend.run(qc_squander_tabu).result()
+	transformed_state_squander_tabu = np.array( result.get_statevector(qc_squander_tabu) )
+
+	result                          = backend.run(qc_squander_tree).result()
+	transformed_state_squander_tree = np.array( result.get_statevector(qc_squander_tree) )
+	
+	result                          = backend.run(qc_qsearch).result()
+	transformed_state_qsearch       = np.array( result.get_statevector(qc_qsearch) )
+
+	
+       
+overlap_squander_tree = transformed_state_original.transpose().conjugate() @ transformed_state_squander_tree
+overlap_squander_tree = overlap_squander_tree * overlap_squander_tree.conj()
 
 
-
-
-overlap_squander = transformed_state_original.transpose().conjugate() @ transformed_state_squander
-overlap_squander = overlap_squander * overlap_squander.conj()
+overlap_squander_tabu = transformed_state_original.transpose().conjugate() @ transformed_state_squander_tabu
+overlap_squander_tabu = overlap_squander_tabu * overlap_squander_tabu.conj()
 
 
 overlap_qsearch = transformed_state_original.transpose().conjugate() @ transformed_state_qsearch
 overlap_qsearch = overlap_qsearch * overlap_qsearch.conj()
 
-print( 'The overlap of states obtained with the original and the squander compressed circuit: ',  overlap_squander )
+print(' ')
+print( 'The overlap of states obtained with the original and the squander compressed circuit with tree search: ',  overlap_squander_tree )
+print( 'The overlap of states obtained with the original and the squander compressed circuit with tabu search: ',  overlap_squander_tabu )
 print( 'The overlap of states obtained with the original and the qsearch compressed circuit: ',  overlap_qsearch )
 
