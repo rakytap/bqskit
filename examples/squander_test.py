@@ -214,17 +214,10 @@ initial_state = initial_state_real + initial_state_imag*1j
 initial_state = initial_state/np.linalg.norm(initial_state)
 
 
-state_to_transform = initial_state.copy()
-qc_original.initialize( state_to_transform )
-
-state_to_transform = initial_state.copy()
-qc_squander_tabu.initialize( state_to_transform )
-
-state_to_transform = initial_state.copy()
-qc_squander_tree.initialize( state_to_transform )
-
-state_to_transform = initial_state.copy()
-qc_qsearch.initialize( state_to_transform )
+qc_original.initialize( initial_state )
+qc_squander_tabu.initialize( initial_state )
+qc_squander_tree.initialize( initial_state )
+qc_qsearch.initialize( initial_state )
 
 
 
