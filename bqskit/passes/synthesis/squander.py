@@ -1,4 +1,4 @@
-"""This module implements the QSearchSynthesisPass."""
+"""This module implements the SquanderSynthesisPass."""
 from __future__ import annotations
 
 import logging
@@ -10,21 +10,14 @@ import math
 
 from bqskit.ir.circuit import Circuit
 from bqskit.ir.opt.cost.functions import HilbertSchmidtResidualsGenerator
-from bqskit.ir.opt.cost.generator import CostFunctionGenerator
-from bqskit.passes.search.frontier import Frontier
-from bqskit.passes.search.generator import LayerGenerator
-from bqskit.passes.search.generators.seed import SeedLayerGenerator
-from bqskit.passes.search.heuristic import HeuristicFunction
-from bqskit.passes.search.heuristics import AStarHeuristic
 from bqskit.passes.synthesis.synthesis import SynthesisPass
-from bqskit.passes.synthesis.qsearch import QSearchSynthesisPass
-from bqskit.qis.state.state import StateVector
-from bqskit.qis.state.system import StateSystem
 from bqskit.qis.unitary import UnitaryMatrix
-from bqskit.runtime import get_runtime
 from bqskit.utils.typing import is_integer
 from bqskit.utils.typing import is_real_number
 from squander import utils
+
+from squander import N_Qubit_Decomposition_Tree_Search
+from squander import N_Qubit_Decomposition_Tabu_Search
 
 _logger = logging.getLogger(__name__)
 
@@ -100,6 +93,7 @@ class SquanderSynthesisPass(SynthesisPass):
 
 
         squander_config.setdefault("verbosity", -1)
+        squander_config.setdefault("strategy", "Tabu_search")
         
                 
         squander_config['optimization_tolerance'] = self.success_threshold
@@ -231,19 +225,13 @@ class SquanderSynthesisPass(SynthesisPass):
 
     async def synthesize(
         self,
-        utry: UnitaryMatrix | StateVector | StateSystem,
+        utry: UnitaryMatrix,
         data: PassData,
     ) -> Circuit:
         """Synthesize `utry`, see :class:`SynthesisPass` for more."""
         # Initialize run-dependent options
         
-        from squander import N_Qubit_Decomposition_Tree_Search
-        from squander import Circuit as qgd_Circuit
-        import numpy as np
-        import numpy.linalg as LA
-        from squander import utils
-        import random
-        import math 
+
         
         Umtx = utry.numpy
         qbit_num = math.floor(math.log2(Umtx.shape[0]))
@@ -251,11 +239,14 @@ class SquanderSynthesisPass(SynthesisPass):
         
 
        
+        if self.squander_config["strategy"] == "Tree_search":
+            cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
+        elif self.squander_config["strategy"] == "Tabu_search":
+            cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
 
-        cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
             
             
-        cDecompose.set_Verbose( -1)
+        cDecompose.set_Verbose( self.squander_config["verbosity"] )
         cDecompose.set_Cost_Function_Variant( 3)	
     
 
