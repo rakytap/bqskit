@@ -15,7 +15,7 @@ from bqskit.qis.unitary import UnitaryMatrix
 from bqskit.utils.typing import is_integer
 from bqskit.utils.typing import is_real_number
 from squander import utils
-
+from squander.gates import qgd_Circuit
 from squander import N_Qubit_Decomposition_Tree_Search
 from squander import N_Qubit_Decomposition_Tabu_Search
 
@@ -26,16 +26,12 @@ class SquanderSynthesisPass(SynthesisPass):
     """
     A pass implementing the Squander synthesis algorithm.
 
-    References:
-       Dr. Peter Rakyta
     """
 
     def __init__(
-        self,
-        success_threshold: float = 1e-8,
+        self, success_threshold : float = 1e-8,
         max_layer: int | None = None,
-        squander_config: dict[str, Any] = {} ,
-        optimizer_engine: str = 'BFGS'
+        squander_config: dict[str, Any] = {} 
     ) -> None:
         """
         Construct a search-based synthesis pass.
@@ -89,23 +85,29 @@ class SquanderSynthesisPass(SynthesisPass):
         self.max_layer = max_layer
 
         self.squander_config = squander_config
-        self.optimizer_engine = optimizer_engine
 
 
         squander_config.setdefault("verbosity", -1)
         squander_config.setdefault("strategy", "Tabu_search")
-        
-                
-        squander_config['optimization_tolerance'] = self.success_threshold
+        squander_config.setdefault("optimization_tolerance", 1e-8)
+        squander_config.setdefault("Cost_Function_Variant",3)
+        squander_config.setdefault("optimizer_engine",'BFGS')
         
 
 
      
     def transform_circuit_from_squander_to_bqskit(self,
         Squander_circuit,
-        parameters,
-        qbit_num)-> Circuit:
-        "a function to translate the circuit from squander to bqskit"
+        parameters,utry: UnitaryMatrix,)-> Circuit:
+        '''A function to translate the circuit from squander to bqskit 
+        
+           Args:
+               Squander_circuit: circuit made with squander.
+               parameters: paramteres of the gates.
+        
+        '''
+  
+        
     #import all the gates
         from bqskit.ir.gates.constant.cx import CNOTGate
         from bqskit.ir.gates.parameterized.cry import CRYGate
@@ -120,10 +122,15 @@ class SquanderSynthesisPass(SynthesisPass):
         from bqskit.ir.gates.constant.y import YGate
         from bqskit.ir.gates.constant.z import ZGate
         from bqskit.ir.gates.constant.sx import SqrtXGate
-
         import squander
         
-        #cDecompose.List_Gates()
+        Umtx = utry.numpy
+        if self.squander_config["strategy"] == "Tree_search":
+            cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
+        elif self.squander_config["strategy"] == "Tabu_search":
+            cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
+            
+        qbit_num = cDecompose.get_Qbit_Num()
         circuit = Circuit(qbit_num)
         gates = Squander_circuit.get_Gates()
 
@@ -234,7 +241,7 @@ class SquanderSynthesisPass(SynthesisPass):
 
         
         Umtx = utry.numpy
-        qbit_num = math.floor(math.log2(Umtx.shape[0]))
+        qbit_num = math.floor(math.log2(Umtx.shape[0])) 
 
         
 
@@ -245,13 +252,14 @@ class SquanderSynthesisPass(SynthesisPass):
             cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
 
             
-            
+
         cDecompose.set_Verbose( self.squander_config["verbosity"] )
-        cDecompose.set_Cost_Function_Variant( 3)	
+        cDecompose.set_Cost_Function_Variant(self.squander_config["Cost_Function_Variant"])
+
     
 
         # adding new layer to the decomposition until threshold
-        cDecompose.set_Optimizer( self.optimizer_engine )
+        cDecompose.set_Optimizer( self.squander_config["optimizer_engine"] )
 
         # starting the decomposition
         cDecompose.Start_Decomposition()
@@ -260,7 +268,7 @@ class SquanderSynthesisPass(SynthesisPass):
         squander_circuit = cDecompose.get_Circuit()
         parameters       = cDecompose.get_Optimized_Parameters()
    
-        Circuit_squander = self.transform_circuit_from_squander_to_bqskit( squander_circuit, parameters, qbit_num)          
+        Circuit_squander = self.transform_circuit_from_squander_to_bqskit( squander_circuit, parameters,utry)          
         dist             = self.bqskit_cost_calculator.calc_cost(Circuit_squander, utry)  
         
         #print( 'Squander dist: ', str(dist) )

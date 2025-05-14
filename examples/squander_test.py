@@ -23,7 +23,7 @@ from qiskit import transpile
 import numpy as np
 import time
 import pickle 
-# import
+
 
 
 # define the largest partition in circuit
@@ -52,18 +52,21 @@ config = {  'strategy': "Tree_search",
          }
                 
 
+
+
+
 workflow = [
     QuickPartitioner( largest_partition ), 
-    ForEachBlockPass([SquanderSynthesisPass(squander_config=config, optimizer_engine="BFGS" ), ScanningGateRemovalPass()]), 
+    ForEachBlockPass([SquanderSynthesisPass(squander_config=config), ScanningGateRemovalPass()]), 
     UnfoldPass(),
 ]
 
 
 
-# Finally, we construct a compiler and submit the task
-#with Compiler(num_workers=1) as compiler:
-with Compiler() as compiler:
-    circuit_squander_tree = compiler.compile(bqskit_circuit_original, workflow)
+#Finally, we construct a compiler and submit the task
+with Compiler(num_workers=1) as compiler:
+    with Compiler() as compiler:
+        circuit_squander_tree = compiler.compile(bqskit_circuit_original, workflow)
 
 
 Circuit.save(circuit_squander_tree, circuit_name + '_squander_tree_search.qasm')
@@ -101,17 +104,20 @@ config = {  'strategy': "Tabu_search",
             'parallel': 0,
          }
 
+
+
+
 workflow = [
     QuickPartitioner( largest_partition ), 
-    ForEachBlockPass([SquanderSynthesisPass(squander_config=config, optimizer_engine="BFGS" ), ScanningGateRemovalPass()]), 
+    ForEachBlockPass([SquanderSynthesisPass(squander_config=config ), ScanningGateRemovalPass()]), 
     UnfoldPass(),
 ]
 
 
 # Finally, we construct a compiler and submit the task
-#with Compiler(num_workers=1) as compiler:
-with Compiler() as compiler:
-    circuit_squander_tabu = compiler.compile(bqskit_circuit_original, workflow)
+with Compiler(num_workers=1) as compiler:
+    with Compiler() as compiler:
+        circuit_squander_tabu = compiler.compile(bqskit_circuit_original, workflow)
 
 
 Circuit.save(circuit_squander_tabu, circuit_name + '_squander_tabu_search.qasm')
@@ -145,6 +151,9 @@ print(' ')
 # QSearch synthesis
 
 start_qsearch = time.time()
+
+
+
 
 
 workflow = [
