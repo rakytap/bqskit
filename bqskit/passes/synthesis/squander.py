@@ -66,6 +66,10 @@ class SquanderSynthesisPass(SynthesisPass):
             raise ValueError(
                 f'Expected max_layer to be positive, got {int(max_layer)}.',
             )
+            
+        
+                
+        
 
         #TODO checking inputs and docstrings
         #TODO set cost function according to BQskit
@@ -73,7 +77,7 @@ class SquanderSynthesisPass(SynthesisPass):
         #TODO implement verbosity from config
         #TODO implement default values for squander config
         #TODO add optimizer engine field into squander config
-        #TODO References:  Dr. Peter Rakyta ?????????
+
 
 
         self.success_threshold = success_threshold
@@ -93,7 +97,10 @@ class SquanderSynthesisPass(SynthesisPass):
         squander_config.setdefault("Cost_Function_Variant",3)
         squander_config.setdefault("optimizer_engine",'BFGS')
         
-
+        #if self.squander_config["strategy"] is not "tabu_search" or "Tree_search":
+        #    raise ValueError( # valuerror? 
+        #        f'Uknown strategy, expected tabu or tree search.',
+         #       )
 
      
     def transform_circuit_from_squander_to_bqskit(self,
