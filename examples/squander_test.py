@@ -244,12 +244,19 @@ sv_tree = qc_squander_tree.get_statevector(initial_state)
 sv_qsearch = qc_qsearch.get_statevector(initial_state)
 
 
-print("it worked yaay")
+
 
 # Compute overlaps (fidelity)
-def compute_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
-    inner_product = np.vdot(state1, state2)  # Equivalent to conj(state1).T @ state2
-    return np.abs(inner_product)**2
+    
+def compute_overlap(state1, state2) -> float:
+    # Ensure both inputs are raw numpy arrays
+    state1 = state1.vec if hasattr(state1, 'vec') else state1
+    state2 = state2.vec if hasattr(state2, 'vec') else state2
+
+    inner_product = np.conjugate(state1) @ state2
+    return np.abs(inner_product) ** 2
+
+
     
     
 overlap_squander_tree = compute_overlap(sv_original, sv_tree)
@@ -263,65 +270,5 @@ print('The overlap of states (original vs squander tabu search): ', overlap_squa
 print('The overlap of states (original vs qsearch): ', overlap_qsearch)
 
         
-#if qiskit_version[0] == '0':
-	
-	# Select the StatevectorSimulator from the Aer provider
-#	simulator = Aer.get_backend('statevector_simulator')	
-#		
-#	backend = Aer.get_backend('aer_simulator')
 
-	# Execute and get the state vector
-#	result                          = execute(qc_original, simulator).result()
-#	transformed_state_original      = np.array( result.get_statevector(qc_original) )
-
-#	result                          = execute(qc_squander_tabu, simulator).result()
-#	transformed_state_squander_tabu = np.array( result.get_statevector(qc_squander_tabu) )
-
-#	result                          = execute(qc_squander_tree, simulator).result()
-#	transformed_state_squander_tree = np.array( result.get_statevector(qc_squander_tree) )
-	
-#	result                          = execute(qc_qsearch, simulator).result()
-#	transformed_state_qsearch       = np.array( result.get_statevector(qc_qsearch) )
-
-
-# Execute and get the state vector
-#else :
-	
-#	qc_original.save_statevector()
-#	qc_squander_tabu.save_statevector()
-#	qc_squander_tree.save_statevector()
-#	qc_qsearch.save_statevector()
-
-#	backend = Aer.AerSimulator(method='statevector')
-
-	# Execute and get the state vector
-#	result                          = backend.run(qc_original).result()
-#	transformed_state_original      = np.array( result.get_statevector(qc_original) )
-
-#	result                          = backend.run(qc_squander_tabu).result()
-#	transformed_state_squander_tabu = np.array( result.get_statevector(qc_squander_tabu) )
-
-#	result                          = backend.run(qc_squander_tree).result()
-#	transformed_state_squander_tree = np.array( result.get_statevector(qc_squander_tree) )
-	
-#	result                          = backend.run(qc_qsearch).result()
-#	transformed_state_qsearch       = np.array( result.get_statevector(qc_qsearch) )
-
-	
-       
-#overlap_squander_tree = transformed_state_original.transpose().conjugate() @ transformed_state_squander_tree
-#overlap_squander_tree = overlap_squander_tree * overlap_squander_tree.conj()
-
-
-#overlap_squander_tabu = transformed_state_original.transpose().conjugate() @ transformed_state_squander_tabu
-#overlap_squander_tabu = overlap_squander_tabu * overlap_squander_tabu.conj()
-
-
-#overlap_qsearch = transformed_state_original.transpose().conjugate() @ transformed_state_qsearch
-#overlap_qsearch = overlap_qsearch * overlap_qsearch.conj()
-
-#print(' ')
-#print( 'The overlap of states obtained with the original and the squander compressed circuit with tree search: ',  overlap_squander_tree )
-#print( 'The overlap of states obtained with the original and the squander compressed circuit with tabu search: ',  overlap_squander_tabu )
-#print( 'The overlap of states obtained with the original and the qsearch compressed circuit: ',  overlap_qsearch )
 

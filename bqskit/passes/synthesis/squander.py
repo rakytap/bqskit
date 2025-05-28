@@ -18,7 +18,7 @@ from squander import utils
 from squander.gates import qgd_Circuit
 from squander import N_Qubit_Decomposition_Tree_Search
 from squander import N_Qubit_Decomposition_Tabu_Search
-
+from typing import Any
 _logger = logging.getLogger(__name__)
 
 
@@ -97,12 +97,15 @@ class SquanderSynthesisPass(SynthesisPass):
         squander_config.setdefault("Cost_Function_Variant",3)
         squander_config.setdefault("optimizer_engine",'BFGS')
         
-        #if self.squander_config["strategy"] is not "tabu_search" or "Tree_search":
-        #    raise ValueError( # valuerror? 
-        #        f'Uknown strategy, expected tabu or tree search.',
-         #       )
+        valid_strategies = ["Tabu_search", "Tree_search"]
+        valid_strategy_variants = valid_strategies + [s.lower() for s in valid_strategies]
 
-     
+        strategy = squander_config.get("strategy", "")
+
+        if strategy not in valid_strategy_variants:
+            print(f"Invalid strategy: {strategy}")
+            
+            
     def transform_circuit_from_squander_to_bqskit(self,
         Squander_circuit,
         parameters,utry: UnitaryMatrix,)-> Circuit:
