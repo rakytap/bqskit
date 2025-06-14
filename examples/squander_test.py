@@ -53,7 +53,7 @@ start_squander = time.time()
 config = {  'strategy': "Tree_search", 
             'parallel': 0,
          }
-                
+         
 
 
 
@@ -254,7 +254,7 @@ def compute_overlap(state1, state2) -> float:
     state2 = state2.vec if hasattr(state2, 'vec') else state2
 
     inner_product = np.conjugate(state1) @ state2
-    return np.abs(inner_product) ** 2
+    return (inner_product.real ** 2 + inner_product.imag ** 2)
 
 
     
