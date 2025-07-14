@@ -18,6 +18,7 @@ from squander import utils
 from squander.gates import qgd_Circuit
 from squander import N_Qubit_Decomposition_Tree_Search
 from squander import N_Qubit_Decomposition_Tabu_Search
+from squander import N_Qubit_Decomposition_Plywood
 from typing import Any
 _logger = logging.getLogger(__name__)
 
@@ -319,7 +320,8 @@ class SquanderSynthesisPass(SynthesisPass):
             cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, topology=topology, config=self.squander_config, accelerator_num=0 )
         elif self.squander_config["strategy"] == "Tabu_search":
             cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, topology=topology, config=self.squander_config, accelerator_num=0 )
-
+        elif self.squander_config["strategy"] == "Plywood":
+            cDecompose = N_Qubit_Decomposition_Plywood( Umtx.conj().T, topology=topology, config=self.squander_config, accelerator_num=0 )
             
 
         cDecompose.set_Verbose( self.squander_config["verbosity"] )

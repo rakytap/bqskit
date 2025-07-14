@@ -1424,6 +1424,8 @@ def build_fullpam_mapping_optimization_workflow(
             [
                 LogPass('Caching permutation-aware synthesis results.'),
                 ExtractModelConnectivityPass(),
+                LogPass('Recaching permutation-aware synthesis results.'),
+                SubtopologySelectionPass(block_size),
                 QuickPartitioner(block_size),
                 ForEachBlockPass(
                     IfThenElsePass(
