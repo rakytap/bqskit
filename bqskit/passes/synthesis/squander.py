@@ -144,9 +144,13 @@ class SquanderSynthesisPass(SynthesisPass):
                 f'Expected parameters to be a numpy.ndarray, got {type(parameters)}.'
             )
 
-        if parameters.size == 0:
-            raise ValueError('Parameters array must not be empty.')
-        
+        expected_param_count = Squander_circuit.get_Parameter_Num()
+        if parameters.size != expected_param_count:
+            raise ValueError(
+                f'Parameter size mismatch: expected {expected_param_count}, got {parameters.size}.'
+            )
+            
+
     #import all the gates
         from bqskit.ir.gates.constant.cx import CNOTGate
         from bqskit.ir.gates.parameterized.cry import CRYGate
@@ -313,7 +317,10 @@ class SquanderSynthesisPass(SynthesisPass):
             cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
 
             
-
+        print(data.initial_mapping,"aaa")
+        print(data.final_mapping,"bbb")
+        
+        
         cDecompose.set_Verbose( self.squander_config["verbosity"] )
         cDecompose.set_Cost_Function_Variant(self.squander_config["Cost_Function_Variant"])
 

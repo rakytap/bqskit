@@ -24,6 +24,7 @@ from qiskit import transpile
 from bqskit.qis.state import StateVector 
 from bqskit.qis.state import StateSystem
 import numpy as np
+from numpy import linalg as LA
 import time
 import pickle 
 
@@ -55,6 +56,14 @@ config = {  'strategy': "Tree_search",
          }
          
 
+from bqskit.qis.graph import CouplingGraph
+from bqskit.compiler.machine import MachineModel
+from bqskit.passes.mapping.setmodel import SetModelPass
+quditnumber = 16 # I shall get it from circuit
+coupling_graph = CouplingGraph([(i, i + 1) for i in range(quditnumber-1)] + [(3, 5)])
+
+model = MachineModel(quditnumber, coupling_graph)
+
 
 
 
@@ -62,12 +71,12 @@ workflow = [
     QuickPartitioner( largest_partition ), 
     ForEachBlockPass([SquanderSynthesisPass(squander_config=config), ScanningGateRemovalPass()]), 
     UnfoldPass(),
+    SetModelPass(model)
 ]
 
 
-
 #Finally, we construct a compiler and submit the task
-with Compiler(num_workers=1) as compiler:
+with Compiler(num_workers = 1) as compiler:
     with Compiler() as compiler:
         circuit_squander_tree = compiler.compile(bqskit_circuit_original, workflow)
 
@@ -75,9 +84,8 @@ with Compiler(num_workers=1) as compiler:
 Circuit.save(circuit_squander_tree, circuit_name + '_squander_tree_search.qasm')
 
 
-
-
 print("\n Circuit optimized with squander tree search:")
+
 
 
 squander_gates = []
@@ -254,7 +262,7 @@ def compute_overlap(state1, state2) -> float:
     state2 = state2.vec if hasattr(state2, 'vec') else state2
 
     inner_product = np.conjugate(state1) @ state2
-    return (inner_product.real ** 2 + inner_product.imag ** 2)
+    return LA.norm(inner_product)
 
 
     
