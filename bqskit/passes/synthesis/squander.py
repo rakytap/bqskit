@@ -102,7 +102,7 @@ class SquanderSynthesisPass(SynthesisPass):
         squander_config.setdefault("Cost_Function_Variant",3)
         squander_config.setdefault("optimizer_engine",'BFGS')
         
-        valid_strategies = ["Tabu_search", "Tree_search"]
+        valid_strategies = ["Tabu_search", "Tree_search", "Plywood"]
         valid_strategy_variants = valid_strategies + [s.lower() for s in valid_strategies]
 
 
@@ -151,6 +151,7 @@ class SquanderSynthesisPass(SynthesisPass):
     #import all the gates
         from bqskit.ir.gates.constant.cx import CNOTGate
         from bqskit.ir.gates.parameterized.cry import CRYGate
+        from bqskit.ir.gates.parameterized.crot import CROTGate
         from bqskit.ir.gates.constant.cz import CZGate
         from bqskit.ir.gates.constant.ch import CHGate
         from bqskit.ir.gates.constant.sycamore import SycamoreGate
@@ -161,6 +162,7 @@ class SquanderSynthesisPass(SynthesisPass):
         from bqskit.ir.gates.constant.x import XGate
         from bqskit.ir.gates.constant.y import YGate
         from bqskit.ir.gates.constant.z import ZGate
+        
         from bqskit.ir.gates.constant.sx import SqrtXGate
         import squander
         
@@ -182,7 +184,14 @@ class SquanderSynthesisPass(SynthesisPass):
                 control_qbit = qbit_num - gate.get_Control_Qbit() - 1                
                 target_qbit = qbit_num - gate.get_Target_Qbit() - 1               
                 circuit.append_gate(CRYGate() ,(control_qbit, target_qbit), parameters_gate)
-            
+                
+            elif isinstance( gate, squander.CROT ):
+                # adding CNOT gate to the quantum circuit
+                parameters_gate = gate.Extract_Parameters( parameters )
+                control_qbit = qbit_num - gate.get_Control_Qbit() - 1                
+                target_qbit = qbit_num - gate.get_Target_Qbit() - 1               
+                circuit.append_gate(CROTGate() ,(control_qbit, target_qbit), parameters_gate)
+                
             elif isinstance( gate, squander.CZ ):
                 # adding CZ gate to the quantum circuit
                 control_qbit = qbit_num - gate.get_Control_Qbit() - 1               
@@ -318,11 +327,19 @@ class SquanderSynthesisPass(SynthesisPass):
 
         if self.squander_config["strategy"] == "Tree_search":
             cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, topology=topology, config=self.squander_config, accelerator_num=0 )
+            Template = self.squander_config.get( "template", None )
+            if Template is not None:
+                cDecompose.set_Two_Qubit_Block_Template(Template)
         elif self.squander_config["strategy"] == "Tabu_search":
             cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, topology=topology, config=self.squander_config, accelerator_num=0 )
+            Template = self.squander_config.get( "template", None )
+            if Template is not None:
+                cDecompose.set_Two_Qubit_Block_Template(Template)
         elif self.squander_config["strategy"] == "Plywood":
-            cDecompose = N_Qubit_Decomposition_Plywood( Umtx.conj().T, topology=topology, config=self.squander_config, accelerator_num=0 )
-            
+            cDecompose = N_Qubit_Decomposition_Plywood( Umtx.conj().T,level_limit_max = 15, topology = topology, config=self.squander_config, minimum_level = 3)
+            Template = self.squander_config.get( "template", None )
+            if Template is not None:
+                cDecompose.set_Two_Qubit_Block_Template(Template)
 
         cDecompose.set_Verbose( self.squander_config["verbosity"] )
         cDecompose.set_Cost_Function_Variant(self.squander_config["Cost_Function_Variant"])

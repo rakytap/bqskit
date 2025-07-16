@@ -84,6 +84,7 @@ from bqskit.passes.util.log import LogPass
 from bqskit.passes.util.random import SetRandomSeedPass
 from bqskit.passes.util.unfold import UnfoldPass
 from bqskit.qis.state import StateLike
+from bqskit.passes import SquanderSynthesisPass
 from bqskit.qis.state.state import StateVector
 from bqskit.qis.state.system import StateSystem
 from bqskit.qis.state.system import StateSystemLike
@@ -1338,6 +1339,130 @@ def build_seqpam_mapping_optimization_workflow(
             ],
         ),
         name='SeqPAM Mapping',
+    )
+
+def build_seqpam_squander_mapping_optimization_workflow(
+    squander_config: dict[str, Any],
+    optimization_level: int = 4,
+    synthesis_epsilon: float = 1e-8,
+    num_layout_passes: int = 3,
+    block_size: int = 3,
+    error_sim_size: int | None = None,
+) -> Workflow:
+    """
+    Build a Sequential-Permutation-Aware Mapping and Optimizing Workflow.
+
+    Note:
+        - This workflow assumes that SetModelPass will be run earlier in the
+          full workflow and doesn't add it in here.
+
+        - This will apply the placement found during the workflow. The
+        resulting circuit will be physically mapped.
+
+    Args:
+        optimization_level (int): The optimization level. See :func:`compile`
+            for more information.
+
+        synthesis_epsilon (float): The maximum distance between target
+            and circuit unitary allowed to declare successful synthesis.
+            Set to 0 for exact synthesis. (Default: 1e-8)
+
+        num_layout_passes (int): The number of layout forward and backward
+            passes to run. See :class:`PamLayoutPass` for more information.
+            (Default: 3)
+
+        block_size (int): The size of the blocks to partition into.
+            Warning, the number of permutation evaluated increases
+            factorially and the difficulty of each permutation increases
+            exponentially with this. (Default: 3)
+
+        error_sim_size (int | None): The size of the blocks to simulate
+            errors on. If None, then no error analysis is performed.
+            (Default: None)
+
+    Raises:
+        ValueError: If block_size < 2.
+
+        ValueError: If error_sim_size < block_size.
+    """
+    if not is_integer(block_size):
+        raise TypeError(
+            f'Expected block_size to be int, got {type(block_size)}.',
+        )
+
+    if block_size < 2:
+        raise ValueError(f'Expected block_size > 1, got {block_size}.')
+
+    if error_sim_size is not None and not is_integer(block_size):
+        raise TypeError(
+            f'Expected int for error_sim_size, got {type(error_sim_size)}.',
+        )
+
+    if error_sim_size is not None and error_sim_size < block_size:
+        raise ValueError(
+            f'Expected error_sim_size >= block_size, got {error_sim_size}.',
+        )
+        
+    squander = SquanderSynthesisPass(squander_config = squander_config)
+
+    qsearch = QSearchSynthesisPass(
+        success_threshold=synthesis_epsilon,
+        instantiate_options=get_instantiate_options(optimization_level),
+    )
+
+    leap = LEAPSynthesisPass(
+        success_threshold=synthesis_epsilon,
+        min_prefix_size=9,
+        instantiate_options=get_instantiate_options(optimization_level),
+    )
+
+    if error_sim_size is not None:
+        post_pam_seq: BasePass = PAMVerificationSequence(error_sim_size)
+    else:
+        post_pam_seq = NOOPPass()
+
+    return Workflow(
+        IfThenElsePass(
+            NotPredicate(WidthPredicate(2)),
+            [
+                LogPass('Caching permutation-aware synthesis results.'),
+                ExtractModelConnectivityPass(),
+                QuickPartitioner(block_size),
+                ForEachBlockPass(
+                        EmbedAllPermutationsPass(
+                            inner_synthesis=squander,
+                            input_perm=True,
+                            output_perm=False,
+                            vary_topology=False,
+                        ),
+                ),
+                LogPass('Preoptimizing with permutation-aware mapping.'),
+                PAMRoutingPass(),
+                post_pam_seq,
+                UnfoldPass(),
+                RestoreModelConnectivityPass(),
+
+                LogPass('Recaching permutation-aware synthesis results.'),
+                SubtopologySelectionPass(block_size),
+                QuickPartitioner(block_size),
+                ForEachBlockPass(
+                        EmbedAllPermutationsPass(
+                            inner_synthesis=squander,
+                            input_perm=False,
+                            output_perm=True,
+                            vary_topology=True,
+                        ),
+                ),
+                LogPass('Performing permutation-aware mapping.'),
+                ApplyPlacement(),
+                PAMLayoutPass(num_layout_passes),
+                PAMRoutingPass(0.1),
+                post_pam_seq,
+                ApplyPlacement(),
+                UnfoldPass(),
+            ],
+        ),
+        name='SeqPAM_squander Mapping',
     )
 
 
