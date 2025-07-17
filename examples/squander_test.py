@@ -59,7 +59,7 @@ config = {  'strategy': "Tree_search",
 from bqskit.qis.graph import CouplingGraph
 from bqskit.compiler.machine import MachineModel
 from bqskit.passes.mapping.setmodel import SetModelPass
-quditnumber = 16 # I shall get it from circuit
+quditnumber = bqskit_circuit_original.num_qudits 
 coupling_graph = CouplingGraph([(i, i + 1) for i in range(quditnumber-1)] + [(3, 5)])
 
 model = MachineModel(quditnumber, coupling_graph)

@@ -14,6 +14,7 @@ from bqskit.passes.synthesis.synthesis import SynthesisPass
 from bqskit.qis.unitary import UnitaryMatrix
 from bqskit.utils.typing import is_integer
 from bqskit.utils.typing import is_real_number
+from bqskit.qis.graph import CouplingGraph
 from squander import utils
 from squander.gates import qgd_Circuit
 from squander import N_Qubit_Decomposition_Tree_Search
@@ -309,18 +310,18 @@ class SquanderSynthesisPass(SynthesisPass):
     
     
         Umtx = utry.numpy
-        qbut_num = data.target.num_qudits
+        qbit_num = data.target.num_qudits
+        topology_list = [(i, i + 1) for i in range(qbit_num-1)]
         
         if self.squander_config["strategy"] == "Tree_search":
-            cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
+            cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, topology= topology_list , config=self.squander_config, accelerator_num=0 )
         elif self.squander_config["strategy"] == "Tabu_search":
-            cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, config=self.squander_config, accelerator_num=0 )
+            cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, topology= topology_list , config=self.squander_config, accelerator_num=0 )
 
             
-        print(data.initial_mapping,"aaa")
-        print(data.final_mapping,"bbb")
-        
-        
+        print(data.connectivity)
+            
+            
         cDecompose.set_Verbose( self.squander_config["verbosity"] )
         cDecompose.set_Cost_Function_Variant(self.squander_config["Cost_Function_Variant"])
 
