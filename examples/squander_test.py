@@ -59,10 +59,21 @@ config = {  'strategy': "Tree_search",
 from bqskit.qis.graph import CouplingGraph
 from bqskit.compiler.machine import MachineModel
 from bqskit.passes.mapping.setmodel import SetModelPass
-quditnumber = bqskit_circuit_original.num_qudits 
+quditnumber = bqskit_circuit_original.num_qudits
+edges = []
+for i in range(8):  
+    left = 2 * i + 1
+    right = 2 * i + 2
+    if left < 16:
+        edges.append((i, left))
+    if right < 16:
+        edges.append((i, right))
+
+tree_coupling_graph = CouplingGraph(edges)
+print(tree_coupling_graph)
 coupling_graph = CouplingGraph([(i, i + 1) for i in range(quditnumber-1)] + [(3, 5)])
 
-model = MachineModel(quditnumber, coupling_graph)
+model = MachineModel(quditnumber, tree_coupling_graph)
 
 
 

@@ -31,7 +31,7 @@ class SquanderSynthesisPass(SynthesisPass):
 
     def __init__(
         self, success_threshold : float = 1e-8,
-        max_layer: int | None = None,
+        max_layer: int = 20,
         squander_config: dict[str, Any] = {} 
     ) -> None:
         """
@@ -44,7 +44,7 @@ class SquanderSynthesisPass(SynthesisPass):
 
             max_layer (int): The maximum number of layers to append without
                 success before termination. If left as None it will default
-                to unlimited. (Default: None)
+                to 20. (Default: None)
                 
              squander_config (dict[str, Any]): Configuration dictionary for
                  customizing the Squander synthesis behavior. Supported keys include:
@@ -59,10 +59,11 @@ class SquanderSynthesisPass(SynthesisPass):
                   convergence. Default is 1e-8.
 
                 - "Cost_Function_Variant" (int): Variant of cost function to use.
-                  Default is 3.
+                  Default is 3 to hilbert_schmidt test.
 
                 - "optimizer_engine" (str): Optimization algorithm to employ,
-                  e.g., "BFGS". Default is 'BFGS'.
+                  e.g., "BFGS","ADAM","GRAD_dESCEND","ADAM_BATCHED","BFGS","AGENTS","COSINE","GRAD_DESCEND:PARAMETER_RULE","AGENTS_COMBINES","BAYES_OPT".
+                  Default is 'BFGS'.
 
 
         Raises:
@@ -75,10 +76,11 @@ class SquanderSynthesisPass(SynthesisPass):
                 f', got {type(success_threshold)}',
             )
 
-        if max_layer is not None and not is_integer(max_layer):
+        if not isinstance(max_layer, int):
             raise TypeError(
                 f'Expected max_layer to be an integer, got {type(max_layer)}.',
             )
+
 
         if max_layer is not None and max_layer <= 0:
             raise ValueError(
@@ -311,17 +313,24 @@ class SquanderSynthesisPass(SynthesisPass):
     
         Umtx = utry.numpy
         qbit_num = data.target.num_qudits
-        topology_list = [(i, i + 1) for i in range(qbit_num-1)]
+        
+        topology_list = data.connectivity
+        num_qubits = topology_list.num_qudits
+        original_edges = list(topology_list)  # list of (i, j)
+
+        reversed_topology_list = []
+        for i, j in original_edges:
+            new_i = num_qubits - i - 1
+            new_j = num_qubits - j - 1
+            reversed_topology_list.append((new_i, new_j))
         
         if self.squander_config["strategy"] == "Tree_search":
-            cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, topology= topology_list , config=self.squander_config, accelerator_num=0 )
+            cDecompose = N_Qubit_Decomposition_Tree_Search( Umtx.conj().T, topology= reversed_topology_list , config=self.squander_config, accelerator_num=0 )
         elif self.squander_config["strategy"] == "Tabu_search":
-            cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, topology= topology_list , config=self.squander_config, accelerator_num=0 )
+            cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, topology= reversed_topology_list , config=self.squander_config, accelerator_num=0 )
 
             
-        print(data.connectivity)
-            
-            
+       
         cDecompose.set_Verbose( self.squander_config["verbosity"] )
         cDecompose.set_Cost_Function_Variant(self.squander_config["Cost_Function_Variant"])
 
