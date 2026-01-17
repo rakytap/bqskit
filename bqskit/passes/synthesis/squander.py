@@ -330,6 +330,8 @@ class SquanderSynthesisPass(SynthesisPass):
             cDecompose = N_Qubit_Decomposition_Tabu_Search( Umtx.conj().T, topology= reversed_topology_list , config=self.squander_config, accelerator_num=0 )
 
             
+
+            
        
         cDecompose.set_Verbose( self.squander_config["verbosity"] )
         cDecompose.set_Cost_Function_Variant(self.squander_config["Cost_Function_Variant"])
@@ -346,7 +348,8 @@ class SquanderSynthesisPass(SynthesisPass):
         squander_circuit = cDecompose.get_Circuit()
         parameters       = cDecompose.get_Optimized_Parameters()
    
-        Circuit_squander = self.transform_circuit_from_squander_to_bqskit( squander_circuit, parameters)          
+        #Circuit_squander = self.transform_circuit_from_squander_to_bqskit( squander_circuit, parameters)
+        Circuit_squander = cDecompose.get_Bqskit_Circuit()          
         dist             = self.bqskit_cost_calculator.calc_cost(Circuit_squander, utry)  
         
         #print( 'Squander dist: ', str(dist) )
