@@ -104,7 +104,9 @@ class SquanderSynthesisPass(SynthesisPass):
         squander_config.setdefault("Cost_Function_Variant",3)
         squander_config.setdefault("optimizer_engine",'BFGS')
         squander_config.setdefault("tree_level_max", max_layer)
-        
+        squander_config["parallel"] = 0
+        squander_config["use_osr"] = 0
+        squander_config["use_graph_search"] = 0
         valid_strategies = ["Tabu_search", "Tree_search"]
         valid_strategy_variants = valid_strategies + [s.lower() for s in valid_strategies]
 
@@ -349,8 +351,10 @@ class SquanderSynthesisPass(SynthesisPass):
         squander_circuit = cDecompose.get_Circuit()
         parameters       = cDecompose.get_Optimized_Parameters()
    
-        #Circuit_squander = self.transform_circuit_from_squander_to_bqskit( squander_circuit, parameters)
-        Circuit_squander = cDecompose.get_Bqskit_Circuit()          
+        Circuit_squander = self.transform_circuit_from_squander_to_bqskit(
+            squander_circuit,
+            parameters,
+        )
         dist             = self.bqskit_cost_calculator.calc_cost(Circuit_squander, utry)  
         
         #print( 'Squander dist: ', str(dist) )
